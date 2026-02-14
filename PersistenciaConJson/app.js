@@ -27,7 +27,7 @@ app.post('/productos',(req,res)=>{
     const producto = req.body;
     let productos = obtenerProductos();
     //agregar validaciones: que no pueda ingresar un producto con el mismo id
-    //hacer uso de la función que genera ID autoincremental
+    //hazcer uso de la función que genera ID autoincremental
     productos.push(producto);
     guardarProducto(productos);
     return res.status(201).json({status:201,message:'Resgistro exitoso'});
