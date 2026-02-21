@@ -12,6 +12,22 @@ app.get("/libros",(req,res)=>{
 
 });
 
+app.post("/libros",(req,res)=>{
+const{titulo,autor,anioPublicacion,estado} = req.body;
+
+if( titulo && autor && anioPublicacion && estado){
+    const nuevoLibro = {
+        id: libros.length + 1,
+        titulo,
+        autor,
+        anioPublicacion,
+        estado
+     }
+}
+
+libros.push(nuevoLibro);
+res.json({status:201,message:'Libro agregado',data:nuevoLibro});
+})
 
 app.listen(PORT, ()=>{
     console.log(`Escuchando en http://localhost:${PORT}/`);
