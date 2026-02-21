@@ -16,8 +16,12 @@ app.get('/libros',(req,res)=>{
 app.post('/libros',(req,res)=>{
     const libro = req.body;
     
-    libros.push(libro);
-    res.status(201).json({status:201,message:'Libro agregado exitosamente...'});
+    if(libro.id == null || libro.titulo==null || libro.autor == null || titulo.anioPublicacion==null || libro.estado == null){
+        return res.status(400).json({status:201,message:'Faltan Datos/Elemento vacio...'});
+    }else{
+        libros.push(libro);
+        return res.status(201).json({status:201,message:'Libro agregado exitosamente...'});
+    }
 })
 
 app.put('/libros/:id',(req,res)=>{
