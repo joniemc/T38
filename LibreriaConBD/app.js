@@ -1,7 +1,11 @@
 const express = require('express');
 const mysql = require('mysql2');
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 const app = express();
+
 const PORT = 3000;
+const SECRET_KEY = 'MiClaveSecreta';
 
 //Creamos un objeto de conexión con todos los atributos de la conexión
 //host, user, password, database
@@ -21,9 +25,82 @@ pool.getConnection((error, conexion) => {
     }
 });
 
+const MiPrimerMiddleware = (req, res, next)=>{
+    const miparametro = req.headers['miparametroheader'];
+
+    if(!miparametro || miparametro !== 'autorizado'){
+        return res.status(401).json({status:401,message:'No autorizado, parametro no valido..'});
+    }
+
+    next();
+};
+
+const AuthMiddleware = (req, res, next)=>{
+    const authHeader = req.headers['authorization'];
+
+    if(!authHeader){
+        return res.status(401).json({status:401,message:'No autorizado, el token es obligatorio..'});
+    }
+
+    const token = authHeader.split(' ')[1];
+
+    jwt.verify(token,SECRET_KEY,(err, user)=>{
+        if(err){
+            return res.status(401).json({status:401,message:'No autorizado, token invalido..'});
+        }
+    });
+
+    next();
+};
+
 app.use(express.json());
 
-app.get('/api/libros', (req, res) => {
+app.post('/api/login', async (req,res)=>{
+    const {username, password} = req.body;
+    if(!username || !password){
+        return res.status(403).json({status:403,messge:'Usuario y contraseña son requeridos'});
+    }
+
+    const sql = 'SELECT Username, Password FROM Usuario WHERE Username = ? AND Estado = 1';
+
+    pool.query(sql, [username, password],async (error, results)=>{
+        if(error){
+            return res.status(500).json({status:500,messge:'Error el la consulta sql..'});
+        }
+
+        if(results.length === 0){
+            return res.status(401).json({status:401,messge:'Credenciales invalidas..'});
+        }
+
+        let user = results[0];
+        const isMatch = await bcrypt.compare(password, user.Password);
+
+        if(!isMatch){
+            return res.status(401).json({status:401,messge:'Credenciales invalidas..'});
+        }
+
+        const token = jwt.sign({username: user.Username}, SECRET_KEY,{expiresIn:'1h'});
+
+        return res.status(200).json({status:200,messge:'Inicio de sesión exitoso..',token: token});
+    });
+
+});
+
+app.get('/api/headersParams', AuthMiddleware, (req, res)=>{
+        
+    res.send('Seguridad superada...');
+});
+
+app.get('/api/gethash/:texto',async (req,res)=>{
+    const texto = req.params.texto;
+
+    const SaltRound = 10;
+    const hash = await bcrypt.hash(texto,SaltRound);
+
+    res.send(hash);
+});
+
+app.get('/api/libros', AuthMiddleware, (req, res) => {
     const sql = 'SELECT * FROM Libro';
     pool.query(sql, (error, results) => {
         if (error) {
@@ -36,7 +113,7 @@ app.get('/api/libros', (req, res) => {
     });
 });
 
-app.get('/api/libros/:AutorId', (req, res) => {
+app.get('/api/libros/:AutorId', AuthMiddleware, (req, res) => {
     const AutorId = parseInt(req.params.AutorId);
     const sql = 'SELECT a.Nombre,' +
         ' l.Titulo as Libro' +
@@ -57,7 +134,7 @@ app.get('/api/libros/:AutorId', (req, res) => {
     });
 });
 
-app.post('/api/libros',(req,res)=>{
+app.post('/api/libros', AuthMiddleware,(req,res)=>{
     const libro = req.body;
     if(!libro.titulo || !libro.autorId || !libro.anioPublicacion 
         || !libro.ISBN || !libro.genero || !libro.estado){
