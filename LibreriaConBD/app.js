@@ -1,5 +1,5 @@
 const express = require('express');
-
+const cors = require('cors');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
@@ -24,10 +24,11 @@ const MiPrimerMiddleware = (req, res, next)=>{
 };
 
 app.use(express.json());
+app.use(cors());
 
 const authRoute = require('./routes/authRoute');
 
-app.use('/api/auth/', authRoute);
+app.use('/api/', authRoute);
 
 // Migrar estas APIs hacia el componente de librosRoute.js
 app.get('/api/libros', AuthMiddleware, (req, res) => {

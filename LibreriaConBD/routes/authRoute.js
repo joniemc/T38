@@ -2,6 +2,7 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const pool = require('../config/db');
+const AuthMiddleware = require('../middleware/authMiddleware');
 
 require('dotenv').config();
 
@@ -36,6 +37,20 @@ router.post('/login', async (req,res)=>{
         return res.status(200).json({status:200,messge:'Inicio de sesión exitoso..',token: token});
     });
 
+});
+
+router.get('/usuario', AuthMiddleware, (req, res )=>{
+    const sql = "select Id as code, username, 'correo@dominio.com' as email FROM  Usuario";
+
+    pool.query(sql,(error, results)=>{
+        if(error){
+            return res.status(500).json({status:500, message:'Ocurrio un error en la consulta..'});
+        }
+
+        return res.status(200).json({status:200,message:'Success',data: results});
+
+
+    });
 });
 
 router.get('/api/gethash/:texto',async (req,res)=>{
